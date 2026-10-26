@@ -80,30 +80,6 @@ class ApiKeyServiceTest {
         assertEquals(4L, result.getRequestsToday());
         assertEquals(6L, result.getRemainingRequests());
     }
-    @Test
-    void shouldReturnCorrectApiKeySTats() {
-
-        ApiKey apiKey = new ApiKey();
-        apiKey.setOwner("Developer 1");
-        apiKey.setDailyLimit(10);
-
-        when(apiKeyRepository.findById(1L))
-                .thenReturn(Optional.of(apiKey));
-
-        when(apiKeyUsageRepository.countTotalUsage(1L))
-                .thenReturn(20L);
-
-        when(apiKeyUsageRepository.countTodayUsage(
-                eq(1L), any(LocalDateTime.class)))
-                .thenReturn(4L);
-
-        ApiKeyStatsResponse result =
-                apiKeyService.getApiKeyStats(1L);
-
-        assertEquals(20L, result.getTotalRequests());
-        assertEquals(4L, result.getRequestsToday());
-        assertEquals(6L, result.getRemainingRequests());
-    }
 
     @Test
     void shouldReturnZeroRemainingRequestWhenLimitExceed(){
