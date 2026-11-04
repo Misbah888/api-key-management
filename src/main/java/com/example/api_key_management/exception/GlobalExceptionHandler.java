@@ -51,9 +51,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleResponseStatusException(
             ResponseStatusException ex) {
 
-        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+        return buildErrorResponse(
+                HttpStatus.valueOf(ex.getStatusCode().value()),
+                ex.getReason()
+        );
 
-        return buildErrorResponse(status, ex.getReason());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -72,10 +74,9 @@ public class GlobalExceptionHandler {
 
         return buildErrorResponse(
                 HttpStatus.BAD_REQUEST,
-                ex.getMessage() != null
-                        ? ex.getMessage()
-                        : "Invalid request"
+                "Invalid request"
         );
+
     }
 
     @ExceptionHandler(Exception.class)

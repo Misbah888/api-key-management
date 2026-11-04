@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,6 +32,26 @@ public class ApiKeyRateLimitServiceTest {
     }
 
     @Test
+    void shouldAllowRequestsAfterWindowReset() {
+        Instant start = Instant.parse("2026-10-24T10:00:00Z");
+
+        AdjustableClock clock = new AdjustableClock(start);
+
+        ApiKeyRateLimitService service =
+                new ApiKeyRateLimitService(clock);
+
+        for (int i = 1; i <= 10; i++) {
+            assertTrue(service.allowRequest(1L));
+        }
+
+        assertFalse(service.allowRequest(1L));
+
+        clock.advanceSeconds(61);
+
+        assertTrue(service.allowRequest(1L));
+    }
+
+    @Test
     void shouldMaintainIndependentLimitsForDifferentApiKeys(){
         ApiKeyRateLimitService apiKeyRateLimitService=new ApiKeyRateLimitService();
         for (int i=1;i<=10;i++){
@@ -44,22 +65,32 @@ public class ApiKeyRateLimitServiceTest {
         assertTrue(apiKeyRateLimitService.allowRequest(2L));
     }
 
-    @Test
-    void shouldAllowRequestsAfterWindowReset() {
-        Instant start = Instant.parse("2026-10-24T10:00:00Z");
-        Clock clock = Clock.fixed(start, ZoneOffset.UTC);
 
-        ApiKeyRateLimitService service = new ApiKeyRateLimitService(clock);
+    private static class AdjustableClock extends Clock {
 
-        for (int i = 1; i <= 10; i++) {
-            assertTrue(service.allowRequest(1L));
+        private Instant currentTime;
+
+        AdjustableClock(Instant initialTime) {
+            this.currentTime = initialTime;
         }
 
-        assertFalse(service.allowRequest(1L));
-        Clock advancedClock = Clock.offset(clock, java.time.Duration.ofSeconds(61));
+        public void advanceSeconds(long seconds) {
+            currentTime = currentTime.plusSeconds(seconds);
+        }
 
-        ApiKeyRateLimitService serviceAfterReset = new ApiKeyRateLimitService(advancedClock);
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
 
-        assertTrue(serviceAfterReset.allowRequest(1L));
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return currentTime;
+        }
     }
 }

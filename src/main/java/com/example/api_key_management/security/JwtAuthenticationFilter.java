@@ -1,5 +1,6 @@
 package com.example.api_key_management.security;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -9,10 +10,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 
 @Component
@@ -45,10 +46,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
         String username;
 
+
         try {
             username = jwtService.extractClaims(token).getSubject();
-        } catch (JwtException | IllegalArgumentException ex) {
+
+        } catch (ExpiredJwtException ex) {
+
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write(
+                    "{\"message\":\"Admin token has expired. Please log in again.\"}"
+            );
+            return;
+
+        } catch (JwtException | IllegalArgumentException ex) {
+
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write(
+                    "{\"message\":\"Invalid JWT token.\"}"
+            );
             return;
         }
 
@@ -58,14 +75,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 userDetails =
                         userDetailsService.loadUserByUsername(username);
-            } catch (org.springframework.security.core.userdetails.UsernameNotFoundException ex) {
+            } catch (UsernameNotFoundException ex) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
             }
 
             if (jwtService.isTokenValid(token, userDetails.getUsername())) {
-                var authentication =
-                        new UsernamePasswordAuthenticationToken(
+                var authentication = new UsernamePasswordAuthenticationToken(
                                 userDetails,
                                 null,
                                 userDetails.getAuthorities()

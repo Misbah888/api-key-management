@@ -13,7 +13,7 @@ import java.util.Date;
 public class JwtService {
 
     @Value("${jwt.secret}")
-    //used to create the key that signs and verifies JWTs
+    //used to create the key ,that signs and verifies JWTs
     private String secret;
 
     private SecretKey getSigningKey() {

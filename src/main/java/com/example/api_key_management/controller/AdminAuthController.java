@@ -6,6 +6,7 @@ import com.example.api_key_management.security.JwtService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -32,16 +33,13 @@ public class AdminAuthController {
     public ResponseEntity<?> login(@RequestBody AdminLoginRequest request) {
 
         try {
-            Authentication authentication =
-                    authenticationManager.authenticate(
+            Authentication authentication = authenticationManager.authenticate(
                             new UsernamePasswordAuthenticationToken(
                                     request.getUsername(),
                                     request.getPassword()
                             )
                     );
-
-            UserDetails userDetails =
-                    (UserDetails) authentication.getPrincipal();
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
             String role = userDetails.getAuthorities()
                     .iterator()
@@ -56,7 +54,7 @@ public class AdminAuthController {
 
             return ResponseEntity.ok(new LoginResponse(token));
 
-        } catch (org.springframework.security.authentication.BadCredentialsException ex) {
+        } catch (BadCredentialsException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid username or password");
         }
